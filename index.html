@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Art and Review System</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+    }
+
+    .container {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .home-page {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #f0f0f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: transform 0.5s ease;
+    }
+
+    .content {
+        display: none;
+    }
+
+    .art-page {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 600px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    #reviews {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 300px;
+        background-color: #fefefe;
+        border: 1px solid #888;
+        padding: 10px;
+    }
+
+    #reviewList {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    #reviewList li {
+        margin-bottom: 10px;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+    }
+
+    #reviewList li:last-child {
+        border-bottom: none;
+    }
+
+    #canvas {
+        border: 2px solid black;
+        margin-top: 20px;
+        cursor: crosshair;
+    }
+
+    .color-palette {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .color {
+        width: 30px;
+        height: 30px;
+        margin: 0 5px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .color:hover {
+        border: 2px solid #000;
+    }
+
+    #submitArt, #submitReview {
+        margin-top: 10px;
+    }
+
+    .review-input {
+        width: 100%;
+        margin-top: 10px;
+        padding: 5px;
+        box-sizing: border-box;
+    }
+</style>
+</head>
+<body>
+
+<div class="home-page">
+    <button id="signInButton">Sign In</button>
+</div>
+
+<div class="container content">
+    <div class="art-page">
+        <button id="reviewButton">Reviews</button>
+        <button id="artButton">Art</button>
+    </div>
+</div>
+
+<div id="reviews" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Reviews</h2>
+        <ul id="reviewList"></ul>
+    </div>
+</div>
+
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <canvas id="canvas" width="500" height="500"></canvas>
+        <div class="color-palette">
+            <div class="color" style="background-color: red;"></div>
+            <div class="color" style="background-color: green;"></div>
+            <div class="color" style="background-color: blue;"></div>
+            <div class="color" style="background-color: yellow;"></div>
+            <div class="color" style="background-color: orange;"></div>
+        </div>
+        <button id="submitArt">Submit Art</button>
+    </div>
+</div>
+
+<div id="signInModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Sign In</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button id="signInSubmit">Sign In</button>
+        <p>Don't have an account? <a href="#" id="signUpLink">Sign Up</a></p>
+    </div>
+</div>
+
+<div id="signUpModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Sign Up</h2>
+        <input type="email" id="signupEmail" placeholder="Email">
+        <input type="password" id="signupPassword" placeholder="Password">
+        <button id="signUpSubmit">Sign Up</button>
+    </div>
+</div>
+
+<script>
+document.getElementById("signInButton").onclick = function() {
+    document.querySelector(".home-page").style.transform = "translateX(-100%)";
+    document.querySelector(".content").style.display = "flex";
+};
+
+document.getElementById("artButton").onclick = function() {
+    document.getElementById("myModal").style.display = "block";
+};
+
+document.getElementById("reviewButton").onclick = function() {
+    document.getElementById("reviews").style.display = "block";
+};
+
+document.getElementsByClassName("close")[0].onclick = function() {
+    document.getElementById("reviews").style.display = "none";
+};
+
+document.getElementsByClassName("close")[1].onclick = function() {
+    document.getElementById("myModal").style.display = "none";
+};
+
+document.getElementsByClassName("close")[2].onclick = function() {
+    document.querySelector(".home-page").style.transform = "translateX(0)";
+};
+
+var submitArtBtn = document.getElementById("submitArt");
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var painting = false;
+var selectedColor = "black";
+
+submitArtBtn.onclick = function() {
+    var canvasData = canvas.toDataURL();
+    // Send canvasData to server or do something with it
+    userArt.push(canvasData);
+    displayUserArt();
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+};
+
+canvas.addEventListener("mousedown", startPosition);
+canvas.addEventListener("mouseup", endPosition);
+canvas.addEventListener("mousemove", draw);
+
+function startPosition(e) {
+    painting = true;
+    draw(e);
+}
+
+function endPosition() {
+    painting = false;
+    ctx.beginPath();
+}
+
+function draw(e) {
+    if (!painting) return;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = selectedColor;
+
+    ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+}
+
+var colorPalette = document.querySelectorAll(".color");
+colorPalette.forEach(function(color) {
+    color.addEventListener("click", function() {
+        selectedColor = color.style.backgroundColor;
+    });
+});
+</script>
+
+<script>
+// Variables to store user information and submitted art
+var currentUser = null;
+var userArt = [];
+
+// Sign In functionality
+document.getElementById("signInButton").onclick = function() {
+    document.getElementById("signInModal").style.display = "block";
+};
+
+document.getElementById("signInSubmit").onclick = function() {
+    // Get user email and password
+    var email = document.getElementById("email").value;
+    var password = document.getElementById("password").value;
+
+    // Example validation, replace with your own authentication logic
+    if (email === "example@email.com" && password === "password") {
+        currentUser = email;
+        document.getElementById("signInModal").style.display = "none";
+        // Redirect to the content page
+        document.querySelector(".home-page").style.display = "none";
+        document.querySelector(".content").style.display = "flex";
+        // Display art if available for this user
+        displayUserArt();
+    } else {
+        alert("Invalid email or password.");
+    }
+};
+
+// Sign Up functionality
+document.getElementById("signUpLink").onclick = function() {
+    document.getElementById("signInModal").style.display = "none";
+    document.getElementById("signUpModal").style.display = "block";
+};
+
+document.getElementById("signUpSubmit").onclick = function() {
+    // Get user email and password
+    var email = document.getElementById("signupEmail").value;
+    var password = document.getElementById("signupPassword").value;
+
+    // Example validation, replace with your own logic
+    if (email && password) {
+        currentUser = email;
+        document.getElementById("signUpModal").style.display = "none";
+        // Redirect to the content page
+        document.querySelector(".home-page").style.display = "none";
+        document.querySelector(".content").style.display = "flex";
+        // Display art if available for this user
+        displayUserArt();
+    } else {
+        alert("Please provide valid email and password.");
+    }
+};
+
+// Display user's submitted art
+function displayUserArt() {
+    var reviewList = document.getElementById("reviewList");
+    reviewList.innerHTML = ""; // Clear previous art
+
+    // Display each submitted art
+    userArt.forEach(function(canvasData) {
+        var img = new Image();
+        img.src = canvasData;
+        var listItem = document.createElement("li");
+        listItem.appendChild(img);
+        var input = document.createElement("input");
+        input.setAttribute("type", "text");
+        input.setAttribute("placeholder", "Type your review here...");
+        input.classList.add("review-input");
+        input.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                var review = document.createElement("p");
+                review.textContent = currentUser + ": " + input.value;
+                listItem.appendChild(review);
+                input.value = "";
+            }
+        });
+        listItem.appendChild(input);
+        reviewList.appendChild(listItem);
+    });
+}
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Art and Review System</title>
+<style>
+    /* Your CSS styles */
+</style>
+</head>
+<body>
+
+<!-- Your HTML content -->
+
+<!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app.js"></script>
+
+<!-- Add Firebase products that you want to use -->
+<script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database.js"></script>
+<script>
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+</script>
+
+<script>
+    // Function to submit art to the server
+    function submitArt(canvasData) {
+        // Get a reference to the Firebase Realtime Database
+        var database = firebase.database();
+        
+        // Push the canvas data to the "art" node in the database
+        var newArtRef = database.ref('art').push();
+        newArtRef.set({
+            canvasData: canvasData,
+            userId: currentUser // Assuming you have a currentUser variable
+        });
+    }
+
+    // Function to submit art review to the server
+    function submitArtReview(artId, reviewText) {
+        // Get a reference to the Firebase Realtime Database
+        var database = firebase.database();
+        
+        // Push the review text to the "reviews" node under the respective artId in the database
+        var newReviewRef = database.ref('reviews/' + artId).push();
+        newReviewRef.set({
+            reviewText: reviewText,
+            userId: currentUser // Assuming you have a currentUser variable
+        });
+    }
+</script>
+
+<script>
+    // Your other JavaScript code
+</script>
+
+</body>
+</html>
